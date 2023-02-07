@@ -1,0 +1,4 @@
+gib
+gib_bot
+discord.py
+sqlalchemy
