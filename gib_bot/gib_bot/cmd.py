@@ -5,6 +5,7 @@
 import subprocess
 
 import discord as dc  # type: ignore
+import openai
 import sqlalchemy  # type: ignore
 
 import gib
@@ -126,9 +127,7 @@ class FunCmds(gib.cmd.CmdIndex):
         if cmd:
             await msg.channel.send(str(cmd))
 
-    async def _status(
-        self, client: gib.client.Client, msg: dc.message.Message, cmd: gib.cmd.Cmd, **_
-    ) -> str:
+    async def _status(self, client: gib.client.Client, cmd: gib.cmd.Cmd, **_) -> str:
         """set or reset the `playing` status"""
 
         status: str | None = cmd.next_token()  # type: ignore
@@ -137,6 +136,31 @@ class FunCmds(gib.cmd.CmdIndex):
             activity=None if status is None else dc.Game(name=status)
         )
         return "i have changed my status"
+
+    async def _gpt(
+        self, client: gib.client.Client, msg: dc.message.Message, cmd: gib.cmd.Cmd
+    ) -> str:
+        """ask an AI to generate you something"""
+
+        if not cmd:
+            return "no prompt supplied"
+        elif client.cfg.openai_api is None:
+            return "no openai support"
+
+        openai.api_key = client.cfg.openai_api
+
+        return (
+            openai.Completion.create(  # type: ignore
+                model="text-davinci-003",
+                prompt=str(cmd),
+                temperature=0.5,
+                max_tokens=client.cfg.openai_max_tokens,
+                top_p=1.0,
+                frequency_penalty=0.0,
+                presence_penalty=0.0,
+            )["choices"][0]["text"].strip()
+            or "*ai couldnt decide*"
+        )
 
 
 class Cmds(NoteCmds, OsCmds, FunCmds):

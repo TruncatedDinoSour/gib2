@@ -17,3 +17,5 @@ class Cfg:
     note_model: type | None = None
     shell_timeout: int
     init_status: str | None
+    openai_api: str | None = None
+    openai_max_tokens: int

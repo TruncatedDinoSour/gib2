@@ -28,6 +28,7 @@ class Note:
 
 CFG.notes_db = NOTES_DB
 CFG.note_model = Note
+CFG.openai_api = os.environ.get("OPENAI_TOKEN")
 
 
 def main() -> int:

@@ -2,5 +2,6 @@
     "prefix": "'",
     "db_dir": "db",
     "shell_timeout": 20,
-    "init_status": "with ya dad"
+    "init_status": "with ya dad",
+    "openai_max_tokens": 300
 }
