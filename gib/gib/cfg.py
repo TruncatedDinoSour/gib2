@@ -15,3 +15,5 @@ class Cfg:
     db_dir: str
     notes_db: typing.Any = None
     note_model: type | None = None
+    shell_timeout: int
+    init_status: str | None

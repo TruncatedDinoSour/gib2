@@ -19,6 +19,10 @@ class Client(dc.Client):
 
         super().__init__(intents=dc.Intents.all())
 
+    async def on_ready(self) -> None:
+        if self.cfg.init_status is not None:
+            await self.change_presence(activity=dc.Game(name=self.cfg.init_status))
+
     async def on_message(self, msg: dc.message.Message) -> None:
         if msg.author.bot or not msg.content.startswith(self.cfg.prefix):
             return

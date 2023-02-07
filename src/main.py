@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """gib2"""
 
+import json
 import os
 import sys
 from warnings import filterwarnings as filter_warnings
@@ -11,7 +12,9 @@ import sqlalchemy  # type: ignore
 import gib
 import gib_bot
 
-CFG: gib.cfg.Cfg = gib.cfg.Cfg(prefix="'", db_dir="db")  # type: ignore
+with open("config.json", "r") as c:
+    CFG: gib.cfg.Cfg = gib.cfg.Cfg(**json.load(c))  # type: ignore
+
 NOTES_DB: gib.sql.SQLiteDB = gib.sql.SQLiteDB("notes", CFG)
 
 

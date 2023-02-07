@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """gib commands"""
 
+import subprocess
+
 import discord as dc  # type: ignore
 import sqlalchemy  # type: ignore
 
@@ -31,16 +33,18 @@ class NoteCmds(gib.cmd.CmdIndex):
         if (note_id := cmd.next_token()) is None:  # type: ignore
             return "missing `note id`"
 
-        if (
-            note := client.cfg.notes_db.session.query(
-                client.cfg.note_model.note_content
+        return (
+            "no such note"
+            if (
+                note := client.cfg.notes_db.session.query(
+                    client.cfg.note_model.note_content
+                )
+                .filter_by(note_id=note_id)
+                .first()
             )
-            .filter_by(note_id=note_id)
-            .first()
-        ) is not None:
-            return "\n".join(f"> {line}" for line in "".join(note).splitlines())
-
-        return "no such note"
+            is None
+            else "".join(note)
+        )
 
     @gib.cmd.noauth
     async def _list(self, client: gib.client.Client, **_) -> str:
@@ -80,10 +84,62 @@ use the `get` cmd to read a note, e.g. 'get hello"""
 
 
 class OsCmds(gib.cmd.CmdIndex):
-    pass
+    async def _sh(self, client: gib.client.Client, cmd: gib.cmd.Cmd, **_) -> str:
+        """run a shell command"""
+
+        if not cmd:
+            return "no shell command specified"
+
+        output: str
+
+        try:
+            output = subprocess.check_output(
+                str(cmd),
+                shell=True,
+                timeout=client.cfg.shell_timeout,
+                stderr=subprocess.STDOUT,
+            ).decode()
+        except FileNotFoundError:
+            output = "-sh: command not found"
+        except subprocess.CalledProcessError as err:
+            output = f"{(err.output or b'').decode()}\n( exit code {err.returncode} )"
+        except subprocess.TimeoutExpired as err:
+            output = f"{(err.output or b'').decode()}\n( timeout after {client.cfg.shell_timeout} s )"
+
+        return f"""```sh
+$ {cmd}
+```
+
+output :
+
+```
+{output[1800:]}
+```"""
 
 
-class Cmds(NoteCmds, OsCmds):
+class FunCmds(gib.cmd.CmdIndex):
+    async def _say(self, msg: dc.message.Message, cmd: gib.cmd.Cmd, **_) -> None:
+        """say your supplied content deleting your original message"""
+
+        await msg.delete()
+
+        if cmd:
+            await msg.channel.send(str(cmd))
+
+    async def _status(
+        self, client: gib.client.Client, msg: dc.message.Message, cmd: gib.cmd.Cmd, **_
+    ) -> str:
+        """set or reset the `playing` status"""
+
+        status: str | None = cmd.next_token()  # type: ignore
+
+        await client.change_presence(
+            activity=None if status is None else dc.Game(name=status)
+        )
+        return "i have changed my status"
+
+
+class Cmds(NoteCmds, OsCmds, FunCmds):
     @gib.cmd.noauth
     async def _help(self, **_) -> str:
         """print help page"""
@@ -94,7 +150,7 @@ class Cmds(NoteCmds, OsCmds):
         h: str = "commands :\n\n"
 
         for cmd, fn in self.cmds.items():
-            h += f"**-** {'(all) ' if getattr(fn, '__noauth__', None) is not None else ''}\
-`{cmd}` (`{fn.__qualname__.split('.', maxsplit=1)[0]}`) -- {fn.__doc__ or '*no help provided*'}\n"
+            h += f"**-** {'( all ) ' if getattr(fn, '__noauth__', None) is not None else ''}\
+`{cmd}` ( `{fn.__qualname__.split('.', maxsplit=1)[0]}` ) -- {fn.__doc__ or '*no help provided*'}\n"
 
-        return h
+        return h + "\ncommands marked as `( all )` anyone can run"

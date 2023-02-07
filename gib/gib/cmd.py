@@ -48,6 +48,12 @@ class Cmd:
 
         return t
 
+    def __str__(self) -> str:
+        return self.s
+
+    def __bool__(self) -> bool:
+        return bool(self.s)
+
 
 class CmdIndex(ABC):
     """a class that has commands
