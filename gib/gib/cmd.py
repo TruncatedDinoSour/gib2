@@ -9,7 +9,12 @@ from dataclasses import dataclass
 
 from . import cfg
 
-__all__: tuple[str, ...] = ("Cmd", "CmdIndex")
+__all__: tuple[str, ...] = ("Cmd", "CmdIndex", "noauth")
+
+
+def noauth(cmd: typing.Callable[..., typing.Any]) -> typing.Callable[..., typing.Any]:
+    cmd.__noauth__ = True  # type: ignore
+    return cmd
 
 
 @dataclass(slots=True)
@@ -55,9 +60,14 @@ class CmdIndex(ABC):
         if self._cmds_cache is not None:
             return self._cmds_cache
 
-        d: dict[str, typing.Any] = {
-            d[1:]: getattr(self, d) for d in dir(self) if d != "_" and d[0] == "_"
-        }
+        d: dict[str, typing.Any] = {}
+
+        for f in dir(self):
+            if f.startswith("__") or f == "_" or f[0] != "_":
+                continue
+
+            if callable(fn := getattr(self, f)):
+                d[f[1:]] = fn
 
         self._cmds_cache = d
         return d

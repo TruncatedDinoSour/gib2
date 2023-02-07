@@ -2,6 +2,8 @@ import typing
 from . import cfg
 from abc import ABC
 
+def noauth(cmd: typing.Callable[..., typing.Any]) -> typing.Callable[..., typing.Any]: ...
+
 class Cmd:
     s: str
     def __init__(self, s: str, cfg: cfg.Cfg) -> None: ...
