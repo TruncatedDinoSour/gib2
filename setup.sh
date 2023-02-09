@@ -7,7 +7,8 @@ main() {
 
     for d in gib gib_bot; do
         pushd "$d"
-        pip install -e .
+        python3 -m pip install -e .
+        python3 -m pip install -r requirements.txt
         popd
     done
 }
